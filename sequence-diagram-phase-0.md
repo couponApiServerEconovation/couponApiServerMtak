@@ -1,4 +1,5 @@
 # 쿠폰 등록
+---
 ```mermaid
 sequenceDiagram
     actor user
@@ -7,30 +8,65 @@ sequenceDiagram
     participant s as service
     participant db
     
-    user->>ctr : UserInfo, CouponInfo
-    ctr->>s: registerCoupon(UserInfo, CouponInfo)
-    s ->> s : isValidUser()
-    opt valid
-        s->>s: isRegistableCoupon()
-        opt registable
-            s ->> db: update coupon list
-            s-->> ctr: success
-            ctr-->> user: success
-        end
-    s-->>ctr: failure
-    ctr -->> user: failure
+    user->>ctr : data: userId + couponNumber
+    ctr->>s: registerCoupon(userId, couopnNumber)
+    s->>db: getCouponInfo(couponNumber)
+    db->>s: CouponInfo
+    opt authentication needed
+    Note over s, db: IsUserValidForCouponAuthenticationNeeded(userId)
+    opt invalid
+    s-->ctr: failure
+    ctr-->user: failure
     end
+    end
+    Note over s, db: IsCouponRegistable(CouponInfo)
+    alt True
+         s-->ctr: failure
+         ctr-->user: failure
+    end
+    s ->> db: update coupon list(userId, nowDate,couponNumber) 
+    s-->> ctr: success 
+    ctr-->> user: success
 ```
 
-## UserInfo 
-* userID
+> [CouponInfo]  
+> couponNumber
+> 인증이 필요한가 authenticationNeeded
+> couponStocks
+> couponDueDate
+> couponType
 
-## CouponInfo
-* couponID
-* 
+## IsUserValidForCouponAuthenticationNeeded(userId, couponType)
+* couponType == 개인 지정 쿠폰
+  * userId를 위한 쿠폰이 있나?
+* couponType == 단체 지정 쿠폰
+  * userId가 화이트 리스트에 있나?
+```mermaid
+sequenceDiagram
+participant s as service
+participant db
+alt couponType == personalDesignationCoupon
+s->> db: personalDesignationCoupon.findbyUserId()
+else couponType == groupDesignationCoupon
+s->>db: groupDesignationCoupon.findUserId()
+end
+db->>s: True/False
+```
 
-## SavedCouponInfo
+## IsCouponRegistrable(couponStocks, couponDueDate)
+* 수량 제한이 있나?
+  * 재고가 있나?
+* 만기일이 있나?
+  * 만기일 넘었나?
+```mermaid
+sequenceDiagram
+participant s as service
+alt couponStocks < 1 or Now() > couponDueDate
+s->>s: False
+end
+s->>s: True
 
+```
 # 쿠폰 사용
 ```mermaid
 sequenceDiagram
@@ -40,12 +76,15 @@ participant ctr as controller
 participant s as service
 participant db
 
-mk->>ctr: UserInfo, CouponInfo
-ctr->>s: useCoupon(UserInfo, CouponInfo)
-s->>s: isCouponUsuable(UserInfo, CouponInfo)
+
+mk->>ctr: userId, couponNumber
+ctr->>s: useCoupon(userId, couponNumber)
+Note over s, db: isCouponUsable(UserInfo, couponNumber)
 alt usuable:
-    s->>s: isUserEligible(UserInfo, CouponInfo)
-    opt eligible
+    s->>db: getCouponInfo(couponNumber)
+    db->>s: CouponInfo
+    Note over s, db: IskUserValidForCouponAuthenticationNeeded(userId, couponType)
+    opt True
         s->>db: update coupon list, coupon use
         s-->>ctr: permitted
         ctr-->>mk: permitted
@@ -56,6 +95,13 @@ alt usuable:
     ctr-->>mk: rejected
     mk-->>user: rejected
 end
+```
+## isCouponUsable(UserInfo, CouponInfo)
+```mermaid
+sequenceDiagram
+participant s as service
+participant db
+
 ```
 
 # 쿠폰 발급
