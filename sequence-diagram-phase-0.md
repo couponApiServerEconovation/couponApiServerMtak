@@ -78,28 +78,12 @@ participant db
 
 mk->>ctr: userId, couponNumber
 ctr->>s: useCoupon(userId, couponNumber)
-Note over s, db: isCouponUsable(UserInfo, couponNumber)
+Note over s, db: isCouponUsable(userId, couponNumber)
 alt usuable:
-    s->>db: getCouponInfo(couponNumber)
-    db->>s: CouponInfo
-    s->>s: IsCouponNeedAuthentication(CouponInfo)
-    alt True
-        Note over s, db: IskUserValidForUsingCoupon(userId, couponType, couponNumber || couponUserWhiteList)
-        alt True
           s->>db: update coupon list, coupon use
           s-->>ctr: permitted
           ctr-->>mk: permitted
           mk-->>user: rejected
-        else False
-           s-->>ctr: rejected
-          ctr-->>mk: rejected
-          mk-->>user: rejected
-        end
-    else False
-        s-->>ctr: rejected
-        ctr-->>mk: rejected
-        mk-->>user: rejected
-    end
 else unusable
 s-->>ctr: rejected
 ctr-->>mk: rejected
@@ -107,8 +91,9 @@ mk-->>user: rejected
 end
 ```
 
-## isCouponUsable(couponNumber)
+## isCouponUsable(couponNumber, userId)
 * 존재하는 쿠폰인가?
+* 쿠폰 주인이 나인가?
 * 유효 기간이 지났는가?
 ```mermaid
 sequenceDiagram
@@ -116,17 +101,11 @@ participant s as service
 participant sv as couponValidationService
 participant db
 
-s->>db: findCouponDueDateAndStockById(couponNumber)
-db->>s: couponDueDate, couponStockCnt || NULL
-alt NULL
-  s->>s: False
-else
-  s->>sv: isCouponNotOutdated(couponDueDate) || isCouponOutOfStock(couponStockCnt)
-  alt True
-  sv->>s: False
-  else False
-  sv->>s: True
-  end
+s->>db: findCouponDueDateAndStockAndOwnerById(couponNumber)
+db->>s: couponDueDate, couponStockCnt , ownerId || NULL
+alt not NULL
+  s->>sv: isCouponNotOutdated(couponDueDate) || isCouponOutOfStock(couponStockCnt) || ownerId != userId
+  sv->>s: True || False
 end
 
 ```
@@ -139,13 +118,6 @@ end
   SINGULAR_NUM_REDUNDANT_RECEIPTABLE, PLURAL_NUM_NONREDUNDANT_RECEIPTABLE}
 * couponUserWhiteList : 
 
-
-## IskUserValidForUsingCoupon(userId, couponType)
-```mermaid
-sequenceDiagram
-participant s as service
-participant db
-```
 # 쿠폰 발급
 ```mermaid
 sequenceDiagram

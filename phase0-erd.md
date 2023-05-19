@@ -2,41 +2,43 @@
 ```mermaid
 erDiagram
 coupon {
-    int number
-    date created_at
-    date modified_at
-    date expired_at
-    date warning_at
-    int coupon_type
-    
+    int number PK 
+    int infoId FK 
+    int status "registered || not registered || used"
 }
 
 couponType {
-    int id
-    string name
-    int couponType
+    int id PK
+    string name "백분율 || 고정금액"
+    int rate
+    int price
 }
 
-authentication {
+whiteList {
+    int id PK
+    int groupId "index" 
+    int userId
+}
+
+couponInfo {
+    int id PK
+    int releasedAmount
+    int registeredAmount
+    date expiredAt
+    date createdAt
+    date startedAt
+    int whiteListId FK "Nullable"
+    int couponType FK 
+}
+
+log {
     int couponId
-    bool useAuthentication
-    int couponTypeId
+    date createdAt
+    int userId FK
+    string action "쿠폰 사용, 쿠폰 등록"
 }
-
-couponTypeInfo {
-    int id
-    bool multiple
-    bool duplicate_receipt
-}
-
-User {
-    string userId
-    
-}
-coupon }|--|| couponType : contains
-couponType |o--|| couponTypeInfo : ""
-coupon ||--|| authentication :""
-couponTypeInfo ||--|| authentication :""
-
-
+coupon }o--|| couponInfo: ""
+whiteList |o--|| couponInfo: ""
+couponType ||--|| couponInfo: ""
+log ||--|| whiteList: ""
 ```
