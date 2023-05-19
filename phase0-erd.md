@@ -1,5 +1,4 @@
 
-
 ```mermaid
 erDiagram
 coupon {
@@ -9,6 +8,7 @@ coupon {
     date expired_at
     date warning_at
     int coupon_type
+    
 }
 
 couponType {
@@ -19,7 +19,7 @@ couponType {
 
 authentication {
     int couponId
-    bool authentication
+    bool useAuthentication
     int couponTypeId
 }
 
@@ -29,6 +29,10 @@ couponTypeInfo {
     bool duplicate_receipt
 }
 
+User {
+    string userId
+    
+}
 coupon }|--|| couponType : contains
 couponType |o--|| couponTypeInfo : ""
 coupon ||--|| authentication :""

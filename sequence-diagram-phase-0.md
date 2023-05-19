@@ -110,7 +110,6 @@ end
 ## isCouponUsable(couponNumber)
 * 존재하는 쿠폰인가?
 * 유효 기간이 지났는가?
-* 쿠폰 재고가 있는가?
 ```mermaid
 sequenceDiagram
 participant s as service
